@@ -13,9 +13,10 @@
       height: 100vh;
       margin: 0;
       background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
     }
     canvas {
-      background-color: #000;
+      background-color: #222;
       border: 2px solid #fff;
     }
     #score {
@@ -23,7 +24,7 @@
       font-size: 24px;
       color: #333;
     }
-    #restart-btn {
+    #restart-btn, #pause-btn {
       margin-top: 10px;
       padding: 10px 20px;
       font-size: 18px;
@@ -33,9 +34,31 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    #restart-btn:disabled {
+    #pause-btn {
+      background-color: #FF5733;
+    }
+    #restart-btn:disabled, #pause-btn:disabled {
       background-color: grey;
       cursor: not-allowed;
+    }
+    #game-over {
+      display: none;
+      color: #fff;
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 5px;
+      font-size: 24px;
+      text-align: center;
+    }
+    #game-over button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -43,7 +66,13 @@
 
   <canvas id="snake-game" width="400" height="400"></canvas>
   <div id="score">Score: 0</div>
+  <button id="pause-btn">Pause</button>
   <button id="restart-btn" disabled>Restart Game</button>
+
+  <div id="game-over">
+    <p>Game Over! Your score is <span id="final-score"></span></p>
+    <button id="restart-game-btn">Restart Game</button>
+  </div>
 
   <script>
     const canvas = document.getElementById('snake-game');
@@ -54,21 +83,23 @@
     let direction = {x: 10, y: 0};
     let food = {x: 100, y: 100};
     let score = 0;
-    const snakeColor = 'green';
-    const snakeHeadColor = 'red';
-    const speed = 100;
+    let speed = 100;
     let gameInterval;
+    let isPaused = false;
+    let isGameOver = false;
     const restartBtn = document.getElementById('restart-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const gameOverScreen = document.getElementById('game-over');
+    const finalScore = document.getElementById('final-score');
+    const restartGameBtn = document.getElementById('restart-game-btn');
 
-    // Variables for touch controls
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
+    // Sound effects
+    const eatSound = new Audio('https://www.soundjay.com/button/beep-07.wav');
+    const gameOverSound = new Audio('https://www.soundjay.com/button/beep-09.wav');
 
     function drawSnake() {
       snake.forEach((segment, index) => {
-        ctx.fillStyle = index === 0 ? snakeHeadColor : snakeColor;
+        ctx.fillStyle = index === 0 ? 'red' : 'green';
         ctx.beginPath();
         ctx.arc(segment.x + gridSize / 2, segment.y + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
         ctx.fill();
@@ -93,7 +124,9 @@
       if (head.x === food.x && head.y === food.y) {
         score++;
         document.getElementById('score').textContent = 'Score: ' + score;
+        eatSound.play();
         generateFood();
+        increaseSpeed();
       } else {
         snake.pop(); // Remove tail if not eating food
       }
@@ -104,7 +137,17 @@
       food.y = Math.floor(Math.random() * canvas.height / gridSize) * gridSize;
     }
 
+    function increaseSpeed() {
+      // Increase speed as score increases
+      if (score % 5 === 0 && speed > 50) {
+        speed -= 10;
+        clearInterval(gameInterval);
+        startGame();
+      }
+    }
+
     function changeDirection(event) {
+      if (isPaused || isGameOver) return;
       const key = event.keyCode;
       if (key === 37 && direction.x === 0) direction = {x: -gridSize, y: 0}; // Left
       if (key === 38 && direction.y === 0) direction = {x: 0, y: -gridSize}; // Up
@@ -146,12 +189,17 @@
 
     function startGame() {
       gameInterval = setInterval(gameLoop, speed);
+      pauseBtn.disabled = false;
       restartBtn.disabled = true;
     }
 
     function endGame() {
       clearInterval(gameInterval);
-      alert("Game Over! Your score is " + score);
+      gameOverSound.play();
+      isGameOver = true;
+      finalScore.textContent = score;
+      gameOverScreen.style.display = 'block';
+      pauseBtn.disabled = true;
       restartBtn.disabled = false;
     }
 
@@ -159,8 +207,11 @@
       snake = [{x: 200, y: 200}];
       direction = {x: 10, y: 0};
       score = 0;
+      speed = 100;
       document.getElementById('score').textContent = 'Score: 0';
+      gameOverScreen.style.display = 'none';
       generateFood();
+      isGameOver = false;
       startGame();
     }
 
@@ -171,11 +222,24 @@
       drawFood();
     }
 
+    function pauseGame() {
+      if (isPaused) {
+        gameInterval = setInterval(gameLoop, speed);
+        pauseBtn.textContent = 'Pause';
+      } else {
+        clearInterval(gameInterval);
+        pauseBtn.textContent = 'Resume';
+      }
+      isPaused = !isPaused;
+    }
+
     // Event listeners
     document.addEventListener('keydown', changeDirection);
     document.addEventListener('touchstart', handleTouchStart);
     document.addEventListener('touchend', handleTouchEnd);
     restartBtn.addEventListener('click', restartGame);
+    pauseBtn.addEventListener('click', pauseGame);
+    restartGameBtn.addEventListener('click', restartGame);
 
     // Start the game initially
     startGame();
