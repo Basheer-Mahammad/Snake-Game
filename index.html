@@ -60,6 +60,12 @@
     let gameInterval;
     const restartBtn = document.getElementById('restart-btn');
 
+    // Variables for touch controls
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
     function drawSnake() {
       snake.forEach((segment, index) => {
         ctx.fillStyle = index === 0 ? snakeHeadColor : snakeColor;
@@ -106,6 +112,38 @@
       if (key === 40 && direction.y === 0) direction = {x: 0, y: gridSize}; // Down
     }
 
+    function handleTouchStart(event) {
+      const touch = event.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }
+
+    function handleTouchEnd(event) {
+      const touch = event.changedTouches[0];
+      touchEndX = touch.clientX;
+      touchEndY = touch.clientY;
+
+      const diffX = touchEndX - touchStartX;
+      const diffY = touchEndY - touchStartY;
+
+      // Horizontal swipe
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (diffX > 0 && direction.x === 0) {
+          direction = {x: gridSize, y: 0}; // Right swipe
+        } else if (diffX < 0 && direction.x === 0) {
+          direction = {x: -gridSize, y: 0}; // Left swipe
+        }
+      }
+      // Vertical swipe
+      else {
+        if (diffY > 0 && direction.y === 0) {
+          direction = {x: 0, y: gridSize}; // Down swipe
+        } else if (diffY < 0 && direction.y === 0) {
+          direction = {x: 0, y: -gridSize}; // Up swipe
+        }
+      }
+    }
+
     function startGame() {
       gameInterval = setInterval(gameLoop, speed);
       restartBtn.disabled = true;
@@ -133,7 +171,10 @@
       drawFood();
     }
 
+    // Event listeners
     document.addEventListener('keydown', changeDirection);
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', handleTouchEnd);
     restartBtn.addEventListener('click', restartGame);
 
     // Start the game initially
