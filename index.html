@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Snake Game</title>
   <style>
     body {
@@ -13,11 +13,12 @@
       height: 100vh;
       margin: 0;
       background-color: #f4f4f4;
-      font-family: Arial, sans-serif;
+      overflow: hidden; /* Prevent page scrolling */
     }
     canvas {
       background-color: #222;
       border: 2px solid #fff;
+      display: block;
     }
     #score {
       margin-top: 20px;
@@ -64,7 +65,7 @@
 </head>
 <body>
 
-  <canvas id="snake-game" width="400" height="400"></canvas>
+  <canvas id="snake-game"></canvas>
   <div id="score">Score: 0</div>
   <button id="pause-btn">Pause</button>
   <button id="restart-btn" disabled>Restart Game</button>
@@ -77,6 +78,14 @@
   <script>
     const canvas = document.getElementById('snake-game');
     const ctx = canvas.getContext('2d');
+
+    // Function to adjust canvas size based on window size
+    function adjustCanvasSize() {
+      const width = window.innerWidth < 400 ? window.innerWidth : 400;
+      const height = window.innerHeight < 400 ? window.innerHeight : 400;
+      canvas.width = width;
+      canvas.height = height;
+    }
 
     const gridSize = 10;
     let snake = [{x: 200, y: 200}];
@@ -107,7 +116,7 @@
     }
 
     function drawFood() {
-      ctx.fillStyle = 'blue';
+      ctx.fillStyle = 'white'; // Food color changed to white
       ctx.fillRect(food.x, food.y, gridSize, gridSize);
     }
 
@@ -215,13 +224,6 @@
       startGame();
     }
 
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      updateSnake();
-      drawSnake();
-      drawFood();
-    }
-
     function pauseGame() {
       if (isPaused) {
         gameInterval = setInterval(gameLoop, speed);
@@ -233,6 +235,13 @@
       isPaused = !isPaused;
     }
 
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updateSnake();
+      drawSnake();
+      drawFood();
+    }
+
     // Event listeners
     document.addEventListener('keydown', changeDirection);
     document.addEventListener('touchstart', handleTouchStart);
@@ -242,7 +251,12 @@
     restartGameBtn.addEventListener('click', restartGame);
 
     // Start the game initially
+    adjustCanvasSize();
     startGame();
+
+    // Adjust canvas size on window resize
+    window.addEventListener('resize', adjustCanvasSize);
+
   </script>
 
 </body>
